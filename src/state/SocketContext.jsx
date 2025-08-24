@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
+import { API } from '../utils/api'
 
 const SocketCtx = createContext(null)
 
@@ -8,7 +9,7 @@ export function SocketProvider({ code, children }) {
   const [socketError, setSocketError] = useState(null)
 
   const socket = useMemo(() => {
-    const url = import.meta.env.VITE_SOCKET_URL
+    const url = API.SOCKET_URL
     const s = io(url, {
       autoConnect: false,
       transports: ['websocket'],
