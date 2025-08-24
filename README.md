@@ -1,4 +1,4 @@
-# WhatsApp-Lite (Client-Only)
+<!-- # WhatsApp-Lite (Client-Only)
 
 A minimal React (Vite) chat UI that logs in via a simple **code** (ABC / QWR), persists messages locally,
 and integrates **Socket.IO** for real-time messaging + read receipts. No Redux; toasts handle login/errors.
@@ -63,4 +63,6 @@ npm run preview
 ## Notes
 - No Redux; state is local and persisted per-conversation in `localStorage`.
 - Read receipts are rendered only on the sender's bubbles (like WhatsApp).
-- Change the Socket URL via `VITE_SOCKET_URL` in `.env`.
+- Change the Socket URL via `VITE_SOCKET_URL` in `.env`. -->
+
+Hey
