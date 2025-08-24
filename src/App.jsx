@@ -9,7 +9,7 @@ import { SocketProvider, useSocket } from './state/SocketContext'
 import { getMyCode, setMyCode, clearMyCode, loadMessages, saveMessages } from './utils/storage'
 
 const PEER = { A: 'B', B: 'A' }
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000'
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_SOCKET_URL
 
 function ChatScreen({ code }) {
   const peer = PEER[code]

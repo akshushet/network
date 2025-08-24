@@ -21,8 +21,7 @@ import Checks from './Checks'
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_SOCKET_URL ||
-  'http://localhost:4000'
+  import.meta.env.VITE_SOCKET_URL
 
 export default function MessageBubble({ m, isMe }) {
   const when = new Date(m.timestamp)

@@ -8,7 +8,7 @@ export function SocketProvider({ code, children }) {
   const [socketError, setSocketError] = useState(null)
 
   const socket = useMemo(() => {
-    const url = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000'
+    const url = import.meta.env.VITE_SOCKET_URL
     const s = io(url, {
       autoConnect: false,
       transports: ['websocket'],
