@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react'
 import toast from 'react-hot-toast'
+import { API } from '../utils/api'
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_SOCKET_URL
+const API_URL = API.BASE_URL || API.SOCKET_URL
 
 export default function MessageInput({ onSend }) {
   const [text, setText] = useState('')

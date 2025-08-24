@@ -18,10 +18,9 @@
 
 import React from 'react'
 import Checks from './Checks'
+import { API } from '../utils/api'
 
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_SOCKET_URL
+const API_URL = API.BASE_URL || API.SOCKET_URL
 
 export default function MessageBubble({ m, isMe }) {
   const when = new Date(m.timestamp)
