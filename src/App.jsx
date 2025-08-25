@@ -8,6 +8,7 @@ import MessageInput from './components/MessageInput'
 import { SocketProvider, useSocket } from './state/SocketContext'
 import { getMyCode, setMyCode, clearMyCode, loadMessages, saveMessages } from './utils/storage'
 import { API } from './utils/api'
+import NoFocusZoom from './helpers/NoFocusZoom'
 
 const PEER = { A: 'B', B: 'A' }
 const API_URL = API.BASE_URL || API.SOCKET_URL
@@ -217,8 +218,11 @@ export default function App() {
   }
 
   return (
+    <>
+    <NoFocusZoom />
     <SocketProvider code={code}>
       <ChatScreen code={code} />
     </SocketProvider>
+    </>
   )
 }
