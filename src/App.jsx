@@ -19,7 +19,6 @@ function ChatScreen({ code }) {
   const [messages, setMessages] = useState(() => loadMessages(code, peer))
   const listRef = useRef(null)
 
-  // initial history fetch from server (merge with local unsent)
   useEffect(() => {
     async function fetchHistory() {
       try {
