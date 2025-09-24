@@ -19,7 +19,7 @@ export default function CodeLogin({ onLogin }) {
     e.preventDefault()
     const c = code.trim().toUpperCase()
     if (!VALID.includes(c)) {
-      toast.error('Invalid code. Use A (Baby) or B (Mommy).')
+      toast.error('Invalid code')
       return
     }
     toast.success('Logged in!')
@@ -128,7 +128,7 @@ export default function CodeLogin({ onLogin }) {
         }
       `}</style>
 
-      <Toaster position="top-center" />
+      <Toaster position="bottom-center" />
       <div className="decor d1" aria-hidden />
       <div className="decor d2" aria-hidden />
 
