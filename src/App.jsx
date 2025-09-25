@@ -19,13 +19,38 @@ function ChatScreen({ code }) {
   const [messages, setMessages] = useState(() => loadMessages(code, peer))
   const listRef = useRef(null)
 
+  const [peerPresence, setPeerPresence] = useState({ online: false, lastSeen: null })
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // Tell server who I am + who my peer is
+    socket.emit('presence:join', { code, peer })
+
+    // (Optional) ask explicitly for the current peer status
+    socket.emit('presence:query', { who: peer }, (p) => {
+      if (p && p.code === peer) setPeerPresence({ online: p.online, lastSeen: p.lastSeen })
+    })
+
+    // Listen for presence updates
+    function onPresence(p) {
+      if (p.code === peer) {
+        setPeerPresence({ online: p.online, lastSeen: p.lastSeen || null })
+      }
+    }
+    socket.on('presence:update', onPresence)
+
+    return () => {
+      socket.off('presence:update', onPresence)
+    }
+  }, [socket, code, peer])
+
   useEffect(() => {
     async function fetchHistory() {
       try {
-        const r = await fetch(`${API_URL}/api/messages?me=${code}&peer=${peer}&limit=200`)
+        const r = await fetch(`${API_URL}/api/messages?me=${code}&peer=${peer}`)
         const data = await r.json()
         if (Array.isArray(data?.messages)) {
-          // Merge strategy: keep unique by id; preserve local "sending" messages without server ids
           const serverMsgs = data.messages.map(m => ({
             id: m._id || m.id,
             text: m.text,
@@ -39,12 +64,10 @@ function ChatScreen({ code }) {
             const locals = prev.filter(m => !m.id || m.id.length === 36) // uuid temp ids
             const mergedMap = new Map(serverMsgs.map(m => [String(m.id), m]))
             const merged = [...serverMsgs]
-            // append local temp messages that are not on server yet
             locals.forEach(m => merged.push(m))
             return merged
           })
 
-          // Reconcile delivery/read for any history addressed to me
           const needDelivered = serverMsgs.filter(m => m.to === code && m.status === 'sent').map(m => String(m.id))
           needDelivered.forEach(id => socket.emit('message:delivered', { id }))
           if (document.visibilityState === 'visible') {
@@ -187,7 +210,7 @@ function ChatScreen({ code }) {
   return (
     <div className="app">
       <Toaster position="top-center" />
-      <ChatHeader me={code} peer={peer} online={connected} onLogout={logout} />
+      <ChatHeader me={code} peer={peer} online={peerPresence.online}lastSeen={peerPresence.lastSeen} onLogout={logout} />
       <div className="messages" ref={listRef}>
         {messages.map(m => (
           <MessageBubble key={m.id} m={m} isMe={m.from === code} />
@@ -218,10 +241,10 @@ export default function App() {
 
   return (
     <>
-    <NoFocusZoom />
-    <SocketProvider code={code}>
-      <ChatScreen code={code} />
-    </SocketProvider>
+      <NoFocusZoom />
+      <SocketProvider code={code}>
+        <ChatScreen code={code} />
+      </SocketProvider>
     </>
   )
 }

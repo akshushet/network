@@ -9,7 +9,7 @@ export default function CodeLogin({ onLogin }) {
   const [seqIdx, setSeqIdx] = useState(0)
   const inputRef = useRef(null)
 
-  const SECRET = ['B','E','X'] // Click these letters in order
+  const SECRET = ['B','E','X'] 
 
   useEffect(() => {
     if (revealed && inputRef.current) inputRef.current.focus()
