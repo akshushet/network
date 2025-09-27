@@ -48,7 +48,7 @@ function ChatScreen({ code }) {
   useEffect(() => {
     async function fetchHistory() {
       try {
-        const r = await fetch(`${API_URL}/api/messages?me=${code}&peer=${peer}`)
+        const r = await fetch(`${API_URL}/api/messages?me=${code}&peer=${peer}&limit=200&order=desc`)
         const data = await r.json()
         if (Array.isArray(data?.messages)) {
           const serverMsgs = data.messages.map(m => ({
@@ -154,6 +154,32 @@ function ChatScreen({ code }) {
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [messages, code, socket])
 
+  useEffect(() => {
+    if (!socket) return;
+    const onConnect = () => {
+      // setMessages(prev => {
+      //   const queued = prev.filter(m => m.status === 'queued' || m.status === 'failed');
+      //   queued.forEach(q => {
+      //     const payload = q.type === 'image' ? { media: q.media } : q.text;
+      //     send(payload);
+      //   });
+      //   return prev;
+      // });
+      setMessages(prev => {
+        const queued = prev.filter(m => m.status === 'queued' || m.status === 'failed');
+        queued.forEach(q => {
+          const payload = q.type === 'image' ? { media: q.media } : q.text;
+          send(payload);
+        });
+        // drop originals; the new send() will append fresh ones
+        const drop = new Set(queued.map(m => m.id));
+        return prev.filter(m => !drop.has(m.id));
+      });
+    };
+    socket.on('connect', onConnect);
+    return () => socket.off('connect', onConnect);
+  }, [socket]); // uses send from scope
+
   function send(payload) {
     const isText = typeof payload === 'string'
     const tempId = uuid()
@@ -177,28 +203,55 @@ function ChatScreen({ code }) {
     }
 
     // optimistic update
-    setMessages(prev => [...prev, {
-      ...outbound,
-      status: 'sending'
-    }])
+    // setMessages(prev => [...prev, {...outbound, status: 'sending'}])
+    setMessages(prev => [...prev, { ...outbound, status: socket?.connected ? 'sending' : 'queued' }])
 
-    const fallback = setTimeout(() => {
-      setMessages(prev => prev.map(m => m.id === tempId && m.status === 'sending' ? { ...m, status: 'sent' } : m))
-    }, 2000)
-
+    // const fallback = setTimeout(() => {
+    //   setMessages(prev => prev.map(m => m.id === tempId && m.status === 'sending' ? { ...m, status: 'sent' } : m))
+    // }, 2000)
+    let fallback = null
+    const markFailed = () =>
+      setMessages(prev => prev.map(m =>
+        m.id === tempId && (m.status === 'sending' || m.status === 'queued')
+          ? { ...m, status: 'failed' }
+          : m
+      ))
     try {
-      socket.emit('message:send', outbound, (ack) => {
-        clearTimeout(fallback)
-        if (ack && ack.ok) {
-          setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: ack.id || tempId, status: 'sent' } : m))
-        } else {
-          setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'sent' } : m))
-        }
-      })
+      // socket.emit('message:send', outbound, (ack) => {
+      //   clearTimeout(fallback)
+      //   if (ack && ack.ok) {
+      //     setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: ack.id || tempId, status: 'sent' } : m))
+      //   } else {
+      //     setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'sent' } : m))
+      //   }
+      // })
+      const actuallySend = () => {
+        setMessages(prev => prev.map(m => m.id === tempId && m.status === 'queued' ? { ...m, status: 'sending' } : m))
+        fallback = setTimeout(markFailed, 8000)
+        socket.emit('message:send', outbound, (ack) => {
+          clearTimeout(fallback)
+          if (ack?.ok) {
+            setMessages(prev => prev.map(m =>
+              m.id === tempId ? { ...m, id: ack.id || tempId, status: 'sent' } : m
+            ))
+          } else {
+            markFailed()
+          }
+        })
+      }
+      if (socket?.connected) {
+        actuallySend()
+      } else {
+        const onConnect = () => { socket.off('connect', onConnect); actuallySend() }
+        socket.on('connect', onConnect)
+      }
     } catch (e) {
-      clearTimeout(fallback)
-      toast.error('Failed to send (socket not connected).')
-      setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'sent' } : m))
+      // clearTimeout(fallback)
+      // toast.error('Failed to send (socket not connected).')
+      // setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'sent' } : m))
+      if (fallback) clearTimeout(fallback)
+      markFailed()
+      toast.error('Failed to send.')
     }
   }
 
@@ -210,7 +263,7 @@ function ChatScreen({ code }) {
   return (
     <div className="app">
       <Toaster position="top-center" />
-      <ChatHeader me={code} peer={peer} online={peerPresence.online}lastSeen={peerPresence.lastSeen} onLogout={logout} />
+      <ChatHeader me={code} peer={peer} online={peerPresence.online} lastSeen={peerPresence.lastSeen} onLogout={logout} />
       <div className="messages" ref={listRef}>
         {messages.map(m => (
           <MessageBubble key={m.id} m={m} isMe={m.from === code} />
